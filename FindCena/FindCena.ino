@@ -76,6 +76,7 @@ int cursorMoveVer = 0;
 int cenaX = 0;
 int cenaY = 0;
 int cenaSize = 30;
+int handPos = 1;
 
 String difficultyName = "normal";
 float difficultyValue = 1.0;
@@ -179,10 +180,32 @@ void loop() {
     case 2:
       //Found Cena Screen
        arduboy.setCursor(0, 0);
-       //arduboy.println("Cena Found!");
+       if (arduboy.everyXFrames(15)) {
+        switch(handPos){
+        case 1:
+          handPos = 2;
+          break;
+        case 2:
+          handPos = 3;
+          break;
+        case 3:
+        handPos=4;
+        break;
+        case 4:
+        handPos=1;
+        break;
+        default:
+        handPos = 1;
+        break;
+        }
+        
+       }
+
+  
        Sprites::drawOverwrite(0, 0, CenaFaceSprite, 0);
-       //Sprites::drawOverwrite(48,16,CenaHandSprite,0);
-       Sprites::drawExternalMask(48,16, CenaHandSprite, CenaHandMask,0,0);
+       if(handPos==4||handPos==2) {Sprites::drawExternalMask(48,16, CenaHandSprite, CenaHandMask,0,0);}
+       else if(handPos==1) {Sprites::drawExternalMask(56,15, CenaHandSprite, CenaHandMask,0,0);}
+       else if(handPos==3) {Sprites::drawExternalMask(40,15, CenaHandSprite, CenaHandMask,0,0);}
        if(arduboy.pressed(A_BUTTON) and AButtonPressed == false) {
         AButtonPressed = true;
         gameScreen = 0;
