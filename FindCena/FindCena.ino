@@ -21,6 +21,11 @@ const uint16_t cenaMusicShort[] PROGMEM = {
   TONES_END
 };
 
+const uint16_t clickFail[] PROGMEM = {NOTE_D3,80, NOTE_REST,500, TONES_END};
+
+
+const uint16_t clickWin[] PROGMEM = {NOTE_C5,100, NOTE_REST,10, NOTE_C5,100, NOTE_REST,10, NOTE_F5, 150, NOTE_REST, 500, TONES_END};
+
 const unsigned char PROGMEM CenaFaceSprite[] =
 {
 // width, height,
@@ -67,6 +72,8 @@ bool DownButtonPressed = false;
 bool LeftButtonPressed = false;
 bool RightButtonPressed = false;
 
+bool cenaFound = false;
+
 int cursorX = 62;
 int cursorY = 10;
 int cursorSize = 4;
@@ -77,6 +84,7 @@ int cenaX = 0;
 int cenaY = 0;
 int cenaSize = 30;
 int handPos = 1;
+int clickState = 1;
 
 String difficultyName = "normal";
 float difficultyValue = 1.0;
@@ -111,8 +119,12 @@ void loop() {
       arduboy.println("Difficulty: " + difficultyName);
 
       if(arduboy.pressed(DOWN_BUTTON)) {
-        DownButtonPressed = true;
-        gameScreen = 2;
+        
+        //debug button, not in use in normal gameplay
+        //DownButtonPressed = true;
+        //gameScreen = 2;
+        //sound.tones(clickWin);
+        
       }
 
       if(arduboy.pressed(A_BUTTON) and AButtonPressed == false) {
@@ -133,44 +145,88 @@ void loop() {
       
     case 1:
       //Game Screen
-      arduboy.setCursor(0, 0);
+       arduboy.setCursor(0, 0);
       arduboy.fillRect(cursorX, cursorY, cursorSize, cursorSize, WHITE);
       
-      if(arduboy.pressed(UP_BUTTON)) {
-        UpButtonPressed = true;
-        cursorY = cursorY - 1;
-        if(cursorY<0){
-          cursorY=0;
+      switch(clickState){
+        case 1:
+        //searching
+  
+         if(arduboy.pressed(UP_BUTTON)) {
+           UpButtonPressed = true;
+           cursorY = cursorY - 1;
+           if(cursorY<0){
+               cursorY=0;
+           }
         }
-      }
-      if(arduboy.pressed(DOWN_BUTTON)) {
-        DownButtonPressed = true;
-        cursorY = cursorY + 1;
-        if(cursorY>60){
-          cursorY=60;
+        if(arduboy.pressed(DOWN_BUTTON)) {
+          DownButtonPressed = true;
+          cursorY = cursorY + 1;
+          if(cursorY>60){
+            cursorY=60;
+          }
         }
-      }
-      if(arduboy.pressed(LEFT_BUTTON)) {
-        LeftButtonPressed = true;
-        cursorX = cursorX - 1;
-        if(cursorX<0){
-          cursorX=0;
+        if(arduboy.pressed(LEFT_BUTTON)) {
+          LeftButtonPressed = true;
+          cursorX = cursorX - 1;
+          if(cursorX<0){
+            cursorX=0;
+          }
         }
-      }
-      if(arduboy.pressed(RIGHT_BUTTON)) {
-        RightButtonPressed = true;
-        cursorX = cursorX + 1;
-        if(cursorX>124){
-          cursorX=124;
+        if(arduboy.pressed(RIGHT_BUTTON)) {
+          RightButtonPressed = true;
+          cursorX = cursorX + 1;
+          if(cursorX>124){
+            cursorX=124;
+          }
         }
-      }
-      if(arduboy.pressed(A_BUTTON) and AButtonPressed == false) {
-        AButtonPressed = true;
-        if(cursorX>cenaX and cursorX<(cenaX+(cenaSize*difficultyValue)) and cursorY>cenaY and cursorY<(cenaY+(cenaSize*difficultyValue))){
-          sound.tones(cenaMusic); 
-          gameScreen = 2;
+        if(arduboy.pressed(A_BUTTON) and AButtonPressed == false) {
+        
+          AButtonPressed = true;
+          if(cursorX>cenaX and cursorX<(cenaX+(cenaSize*difficultyValue)) and cursorY>cenaY and cursorY<(cenaY+(cenaSize*difficultyValue))){
+            clickState=3;
+            sound.tones(clickWin);  
+          }
+          else{ 
+            clickState=2;
+            sound.tones(clickFail);
+            
+          }
         }
+        break;
+        
+        case 2:
+        //click fail
+          arduboy.fillRect(cursorX+cursorSize, cursorY+cursorSize, cursorSize, cursorSize, WHITE);
+          arduboy.fillRect(cursorX-cursorSize, cursorY+cursorSize, cursorSize, cursorSize, WHITE);
+          arduboy.fillRect(cursorX+cursorSize, cursorY-cursorSize, cursorSize, cursorSize, WHITE);
+          arduboy.fillRect(cursorX-cursorSize, cursorY-cursorSize, cursorSize, cursorSize, WHITE);
+          if(sound.playing()==false){
+            clickState = 1;
+          }
+          break;
+          
+        case 3:
+        //click win
+
+        arduboy.fillRect(cursorX+cursorSize+2, cursorY, cursorSize, cursorSize, WHITE);
+          arduboy.fillRect(cursorX-cursorSize-2, cursorY, cursorSize, cursorSize, WHITE);
+          arduboy.fillRect(cursorX, cursorY+cursorSize+2, cursorSize, cursorSize, WHITE);
+          arduboy.fillRect(cursorX, cursorY-cursorSize-2, cursorSize, cursorSize, WHITE);
+          if(sound.playing()==false){
+            sound.tones(cenaMusic);
+            gameScreen = 2;
+            clickState = 1;
+          }
+          break;
+
+        default:
+        //error!
+        gameScreen = 3;
+        clickState = 1;
+        break;
       }
+ 
       if(arduboy.pressed(B_BUTTON) and BButtonPressed == false) {
         BButtonPressed = true;
         gameScreen = 0;
@@ -221,7 +277,10 @@ void loop() {
         gameScreen = 0;
       }
   }
+  
   arduboy.display();
+
+
   
   if(arduboy.notPressed(A_BUTTON)) {
     AButtonPressed = false;
